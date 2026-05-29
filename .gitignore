@@ -1,0 +1,28 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python Cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Local Database & Session Uploads
+rag-agent/chroma_db/
+rag-agent/data/
+chroma_db/
+data/
+
+# Environment configurations containing credentials
+rag-agent/.env
+.env
+
+# IDE Configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
