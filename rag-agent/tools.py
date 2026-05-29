@@ -17,7 +17,7 @@ class WebSearchInput(BaseModel):
             "ONLY use this when the user's question is about an uploaded PDF topic "
             "and the document search returned insufficient results. "
             "Do NOT use for general knowledge or unrelated questions."
-        )
+        );.
     )
 
 class GetCurrentTimeInput(BaseModel):
