@@ -17,10 +17,12 @@ class Settings(BaseSettings):
 
     # API Keys & LLM settings
     GROQ_API_KEY: str = Field(default="")
-    LLM_MODEL: str = Field(default="llama3-70b-8192")
+    LLM_MODEL: str = Field(default="llama-3.1-8b-instant")
     LLM_TEMPERATURE: float = Field(default=0.2)
 
-
+    # Speech-To-Text (STT) Settings
+    DEFAULT_STT_ENGINE: str = Field(default="auto")  # "auto", "groq", "custom"
+    CUSTOM_STT_URL: str = Field(default="http://127.0.0.1:8001/transcribe")  # Custom/Piper STT endpoint
 
     # MySQL Configuration
     MYSQL_HOST: str = Field(default="localhost")

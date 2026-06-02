@@ -1069,6 +1069,52 @@
                 display: flex;
             }
         }
+
+        /* Microphone Button & Recording styles */
+        .mic-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+            margin-right: 8px;
+        }
+
+        .mic-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .mic-btn.recording {
+            background: var(--rose) !important;
+            color: white !important;
+            border-color: var(--rose) !important;
+            animation: pulse-recording 1.5s infinite;
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
+        }
+
+        @keyframes pulse-recording {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(244, 63, 94, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1162,16 +1208,16 @@
                 <div class="input-container" id="chat-input-container">
                     <div class="input-box-wrapper">
                         <select class="model-select" id="model-select-field">
-                            <option value="groq:llama-3.1-8b-instant" selected>🦙 Llama 3.1 8B Instant (Groq) [Recommended]</option>
-                            <option value="groq:llama-3.3-70b-versatile">🦙 Llama 3.3 70B Versatile (Groq)</option>
-                            <option value="groq:meta-llama/llama-4-scout-17b-16e-instruct">🦙 Llama 4 Scout 17B (Groq)</option>
-                            <option value="groq:meta-llama/llama-4-maverick-17b-128e-instruct">🦙 Llama 4 Maverick 17B (Groq)</option>
-                            <option value="groq:qwen-qwq-32b">🧠 Qwen QWQ 32B (Groq)</option>
-                            <option value="groq:deepseek-r1-distill-qwen-32b">🐳 DeepSeek R1 Distill Qwen 32B (Groq)</option>
-                            <option value="groq:moonshotai/kimi-k2-instruct">🌙 Kimi K2 (Groq)</option>
+                            <option value="groq:llama-3.1-8b-instant" selected>Llama 3.1 8B Instant</option>
+                            <option value="groq:llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
+                            <option value="groq:openai/gpt-oss-120b">GPT OSS 120B</option>
+                            <option value="groq:openai/gpt-oss-20b">GPT OSS 20B</option>
                         </select>
                         <textarea class="chat-input" id="chat-input-field" placeholder="Ask a question about your indexed files..." onkeydown="handleInputKeydown(event)" rows="1"></textarea>
 
+                        <button class="mic-btn" id="mic-record-btn" onclick="toggleAudioRecording(event)" title="Speak your query">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
                         <button class="send-btn" id="send-message-btn" onclick="submitMessage()" disabled>
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
@@ -1228,6 +1274,12 @@
         let currentSessionId = null;
         let isSending = false;
         
+        // Speech-To-Text (STT) Variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingDurationInterval = null;
+        
         // Configure marked options
         marked.setOptions({
             breaks: true,
@@ -1239,6 +1291,7 @@
             fetchSystemStatus();
             loadSessions();
             loadFiles();
+            updateSTTDropdownBasedOnNetwork();
             
             // Poll system status every 15 seconds
             setInterval(fetchSystemStatus, 15000);
@@ -1555,13 +1608,18 @@
                             <span>Retrieved Citations</span>
                         </div>
                         <div class="citations-list">
-                            ${citations.map((c, index) => `
-                                <span class="citation-tag" 
-                                      onclick="showCitationPopup(event, '${escapeQuote(c.source)}', ${c.page || 1}, '${escapeQuote(c.snippet)}')">
-                                    <i class="fa-solid fa-file-lines"></i>
-                                    ${c.source} (Page ${c.page})
-                                </span>
-                            `).join('')}
+                            ${citations.map((c, index) => {
+                                const isWeb = !!c.url;
+                                const iconClass = isWeb ? 'fa-solid fa-globe' : 'fa-solid fa-file-lines';
+                                const label = isWeb ? c.source : `${c.source} (Page ${c.page})`;
+                                return `
+                                    <span class="citation-tag" 
+                                          onclick="showCitationPopup(event, '${escapeQuote(c.source)}', ${c.page || 'null'}, '${escapeQuote(c.snippet)}', '${escapeQuote(c.url || '')}')">
+                                        <i class="${iconClass}"></i>
+                                        ${label}
+                                    </span>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -1594,13 +1652,22 @@
                 .replace(/\\r/g, ' ');
         }
 
-        function showCitationPopup(event, source, page, snippet) {
+        function showCitationPopup(event, source, page, snippet, url = '') {
             const popup = document.getElementById('citation-popup');
+            const isWeb = !!url;
+            const iconClass = isWeb ? 'fa-solid fa-globe' : 'fa-solid fa-file-lines';
+            let headerText = '';
+            if (isWeb) {
+                headerText = `<a href="${url}" target="_blank" style="color: var(--blue); text-decoration: underline;"><i class="${iconClass}"></i> ${source}</a>`;
+            } else {
+                headerText = `<i class="${iconClass}"></i> ${source}${page ? ` - Page ${page}` : ''}`;
+            }
+            
             popup.innerHTML = `
-                <strong style="color: var(--text-primary); display:block; margin-bottom: 4px;">
-                    <i class="fa-solid fa-file-lines"></i> ${source} - Page ${page}
+                <strong style="color: var(--text-primary); display:block; margin-bottom: 6px;">
+                    ${headerText}
                 </strong>
-                <span>"${snippet}"</span>
+                <span style="display:block; max-height: 150px; overflow-y: auto; white-space: pre-wrap;">"${snippet}"</span>
             `;
             
             popup.style.display = 'block';
@@ -1929,6 +1996,174 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // ----------------- Speech-To-Text (STT) Logic -----------------
+        
+        // Auto-detect browser connection state to show helpful alerts
+        window.addEventListener('online', updateSTTDropdownBasedOnNetwork);
+        window.addEventListener('offline', updateSTTDropdownBasedOnNetwork);
+
+        function updateSTTDropdownBasedOnNetwork() {
+            if (!navigator.onLine) {
+                showToast("You are offline. Speech-to-Text will automatically route to your local Piper engine.", "success");
+            }
+        }
+
+        async function toggleAudioRecording(event) {
+            if (event) event.preventDefault();
+            
+            const micBtn = document.getElementById('mic-record-btn');
+            
+            if (isRecording) {
+                stopRecording();
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    startRecording(stream);
+                } catch (err) {
+                    console.error('Microphone access denied:', err);
+                    showToast('Microphone access denied or not available. Please check permissions.', 'error');
+                }
+            }
+        }
+
+        function startRecording(stream) {
+            const micBtn = document.getElementById('mic-record-btn');
+            const textarea = document.getElementById('chat-input-field');
+            
+            audioChunks = [];
+            
+            // Check browser supported audio formats (WebM/OGG/default fallback)
+            let options = { mimeType: 'audio/webm' };
+            if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                options = { mimeType: 'audio/ogg' };
+                if (!MediaRecorder.isTypeSupported('audio/ogg')) {
+                    options = {}; // browser default
+                }
+            }
+
+            try {
+                mediaRecorder = new MediaRecorder(stream, options);
+            } catch (e) {
+                mediaRecorder = new MediaRecorder(stream);
+            }
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                // Release audio tracks
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Compile chunks
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                
+                // Reset button state
+                micBtn.classList.remove('recording');
+                micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                textarea.placeholder = "Ask a question about your indexed files...";
+                
+                if (audioBlob.size > 1000) { // minimum size to avoid transcribing silence
+                    await sendAudioForTranscription(audioBlob);
+                } else {
+                    showToast("Recording was too short.", "error");
+                }
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            micBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+            
+            let seconds = 0;
+            textarea.placeholder = "Listening... Speak now. (0s)";
+            
+            recordingDurationInterval = setInterval(() => {
+                seconds++;
+                textarea.placeholder = `Listening... Speak now. (${seconds}s)`;
+                if (seconds >= 60) { // Limit to 1 minute
+                    stopRecording();
+                    showToast("Maximum recording limit reached (60s).", "success");
+                }
+            }, 1000);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            if (recordingDurationInterval) {
+                clearInterval(recordingDurationInterval);
+                recordingDurationInterval = null;
+            }
+            isRecording = false;
+        }
+
+        async function sendAudioForTranscription(audioBlob) {
+            const textarea = document.getElementById('chat-input-field');
+            const originalPlaceholder = textarea.placeholder;
+            const originalValue = textarea.value;
+            
+            textarea.disabled = true;
+            textarea.placeholder = "Transcribing voice...";
+            
+            // Set engine to auto (which tries Groq first and falls back to Piper local STT)
+            let sttEngine = 'auto';
+            
+            // If client-side browser is offline, directly instruct the backend to use the local custom STT (Piper)
+            if (!navigator.onLine) {
+                sttEngine = 'custom';
+            }
+            
+            const formData = new FormData();
+            // Append file
+            const fileExtension = audioBlob.type.includes('ogg') ? 'ogg' : 'webm';
+            formData.append('file', audioBlob, `recording.${fileExtension}`);
+            formData.append('engine', sttEngine);
+            
+            try {
+                const response = await fetch('/api/stt', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    // Update input box with transcript
+                    if (originalValue) {
+                        textarea.value = originalValue.trim() + " " + result.text;
+                    } else {
+                        textarea.value = result.text;
+                    }
+                    
+                    // Trigger input event to adjust textarea height
+                    textarea.dispatchEvent(new Event('input'));
+                    
+                    // Show notification detailing the engine used, especially on fallback
+                    if (result.fallback_occurred) {
+                        showToast("Groq offline/failed. Automatically transcribed using Piper (local STT).", "success");
+                    } else if (result.engine === 'custom') {
+                        showToast("Transcribed using local Piper engine.", "success");
+                    } else {
+                        showToast("Transcribed using Groq Whisper.", "success");
+                    }
+                } else {
+                    const errMsg = result.detail?.message || result.detail || "Unknown error during transcription.";
+                    showToast(errMsg, 'error');
+                }
+            } catch (err) {
+                console.error("Transcription error:", err);
+                showToast("Failed to connect to transcription server.", "error");
+            } finally {
+                textarea.disabled = false;
+                textarea.placeholder = "Ask a question about your indexed files...";
+                textarea.focus();
+            }
         }
     </script>
 </body>

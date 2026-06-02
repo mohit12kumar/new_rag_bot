@@ -17,7 +17,7 @@ class WebSearchInput(BaseModel):
             "ONLY use this when the user's question is about an uploaded PDF topic "
             "and the document search returned insufficient results. "
             "Do NOT use for general knowledge or unrelated questions."
-        );.
+        )
     )
 
 class GetCurrentTimeInput(BaseModel):
@@ -54,8 +54,7 @@ def search_documents(query: str) -> str:
                 })
         
         # Merge or append to existing citations in this request context
-        existing = retrieved_citations.get()
-        retrieved_citations.set(existing + citations)
+        retrieved_citations.get().extend(citations)
         
         # Format the response to be fed into the LLM context
         formatted = []
@@ -169,10 +168,40 @@ def web_search(query: str) -> str:
 
     # ── Execute the anchored web search ─────────────────────────────────────────
     try:
-        from langchain_community.tools import DuckDuckGoSearchRun
-        search = DuckDuckGoSearchRun()
-        result = search.run(anchored_query)
-        return f"[Web search anchored to PDF topics: {pdf_context}]\n\n{result}"
+        from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
+        search = DuckDuckGoSearchAPIWrapper()
+        results = search.results(anchored_query, max_results=5)
+        
+        if not results:
+            return f"[Web search anchored to PDF topics: {pdf_context}]\n\nNo good DuckDuckGo Search Result was found"
+            
+        citations = []
+        formatted = []
+        for r in results:
+            snippet = r.get("snippet", "")
+            title = r.get("title", "")
+            link = r.get("link", "")
+            
+            if not snippet:
+                continue
+                
+            citations.append({
+                "source": title or "Web Search Result",
+                "url": link,
+                "snippet": snippet[:200] + "..." if len(snippet) > 200 else snippet
+            })
+            
+            formatted.append(
+                f"Web Title: {title}\n"
+                f"Web URL: {link}\n"
+                f"Snippet: {snippet}\n"
+                f"---"
+            )
+            
+        # Append to existing citations in request context
+        retrieved_citations.get().extend(citations)
+        
+        return f"[Web search anchored to PDF topics: {pdf_context}]\n\n" + "\n\n".join(formatted)
     except Exception as e:
         return f"Web search is currently unavailable: {str(e)}"
 

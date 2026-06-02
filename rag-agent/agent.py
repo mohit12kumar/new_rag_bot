@@ -32,8 +32,11 @@ def get_agent_executor(db_session: Session, model: Optional[str] = None) -> Runn
     
     # Pick the requested model, or fallback to config
     selected_model = model or settings.LLM_MODEL
-    # Fallback to default Groq model if selected model is empty or references an old OpenAI model
-    if not selected_model or any(openai_indicator in selected_model.lower() for openai_indicator in ["gpt", "openai"]):
+    # Fallback to default Groq model if selected model is empty or references an unsupported OpenAI model (excluding gpt-oss)
+    if not selected_model or (
+        any(openai_indicator in selected_model.lower() for openai_indicator in ["gpt", "openai"])
+        and "gpt-oss" not in selected_model.lower()
+    ):
         selected_model = "llama-3.1-8b-instant"
         
     llm = ChatGroq(

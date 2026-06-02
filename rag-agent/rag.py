@@ -136,13 +136,13 @@ def delete_file_from_store(filename: str, session_id: str = None) -> None:
 
 def search_vector_store(query: str, k: int = 5, session_id: str = None) -> List[Dict[str, Any]]:
     """
-    Perform a similarity search in Chroma and format the results.
+    Perform a hybrid search (Vector + BM25) in Chroma and format the results using Reciprocal Rank Fusion (RRF).
     
     Returns a list of structured results containing:
       - content: Text snippet
       - source: Filename
       - page: Page number (if available)
-      - score: Distance score
+      - score: Unified RRF score (higher is more relevant)
     """
     try:
         store = get_vector_store()
@@ -151,28 +151,77 @@ def search_vector_store(query: str, k: int = 5, session_id: str = None) -> List[
         search_filter = {"session_id": active_session}
         # Search with score (returns tuple of (Document, score))
         # Chroma returns L2 distance; lower is closer (more similar)
-        raw_results = store.similarity_search_with_score(query, k=k, filter=search_filter)
+        raw_vector_results = store.similarity_search_with_score(query, k=k, filter=search_filter)
     except Exception as e:
         raise VectorStoreError(
             message="Failed to perform query search in the vector database.",
             details=str(e)
         )
-    
+
+    # Perform BM25 Search on session's documents
+    raw_bm25_results = []
     try:
+        collection_data = store._collection.get(
+            where={"session_id": active_session},
+            include=["documents", "metadatas"]
+        )
+        documents_list = collection_data.get("documents", []) if collection_data else []
+        metadatas_list = collection_data.get("metadatas", []) if collection_data else []
+        
+        if documents_list:
+            from langchain_core.documents import Document
+            from langchain_community.retrievers import BM25Retriever
+            
+            docs = []
+            for doc_text, meta in zip(documents_list, metadatas_list):
+                docs.append(Document(page_content=doc_text, metadata=meta or {}))
+                
+            bm25_retriever = BM25Retriever.from_documents(docs)
+            bm25_retriever.k = k
+            raw_bm25_results = bm25_retriever.invoke(query)
+    except Exception as e:
+        # Graceful fallback: log warning and proceed with vector results only
+        print(f"Warning: Failed to perform BM25 search (falling back to vector-only): {e}")
+
+    try:
+        # Reciprocal Rank Fusion (RRF) algorithm to combine vector and BM25 rankings
+        # Standard constant c = 60
+        c = 60
+        rrf_scores = {}
+        doc_map = {}
+
+        # 1. Fuse vector search results
+        for rank, (doc, vec_score) in enumerate(raw_vector_results, 1):
+            key = doc.page_content
+            doc_map[key] = doc
+            rrf_scores[key] = rrf_scores.get(key, 0.0) + (1.0 / (c + rank))
+
+        # 2. Fuse BM25 search results
+        for rank, doc in enumerate(raw_bm25_results, 1):
+            key = doc.page_content
+            if key not in doc_map:
+                doc_map[key] = doc
+            rrf_scores[key] = rrf_scores.get(key, 0.0) + (1.0 / (c + rank))
+
+        # 3. Sort by RRF score descending
+        sorted_keys = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
+
         formatted_results = []
-        for doc, score in raw_results:
+        for key in sorted_keys[:k]:
+            doc = doc_map[key]
             formatted_results.append({
                 "content": doc.page_content,
                 "source": doc.metadata.get("source", "Unknown"),
                 "page": doc.metadata.get("page", 1),
-                "score": float(score)
+                "score": float(rrf_scores[key])
             })
         return formatted_results
     except Exception as e:
         raise VectorStoreError(
-            message="Failed to process search results from the vector database.",
+            message="Failed to process search results from the hybrid retriever.",
             details=str(e)
         )
+
 
 def get_indexed_files(session_id: str = None) -> List[str]:
     """

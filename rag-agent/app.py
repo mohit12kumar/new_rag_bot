@@ -3,6 +3,7 @@ import shutil
 import uuid
 import datetime
 import logging
+import requests
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, Request
@@ -390,6 +391,125 @@ async def status_endpoint(db: Session = Depends(get_db)):
         "chroma": "connected" if chroma_ok else "disconnected",
         "indexed_documents": indexed_files_count
     }
+
+@app.post("/api/stt")
+async def speech_to_text_endpoint(
+    file: UploadFile = File(...),
+    engine: Optional[str] = Form("auto")
+):
+    """
+    Speech-To-Text transcription endpoint.
+    Accepts audio file and transcribes it using Groq Whisper or custom-deployed local STT.
+    Automatically falls back to local STT if Groq fails or is offline (when engine is 'auto').
+    """
+    try:
+        audio_content = await file.read()
+        filename = file.filename or "audio.webm"
+    except Exception as e:
+        logger.error(f"Failed to read uploaded audio file: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to read uploaded audio file.")
+
+    used_engine = None
+    transcript = None
+    errors = []
+
+    # 1. Groq Whisper Path (Online)
+    if engine in ("auto", "groq"):
+        if not settings.GROQ_API_KEY or "your_groq_api" in settings.GROQ_API_KEY.lower():
+            err_msg = "Groq API Key is not configured."
+            logger.warning(err_msg)
+            errors.append(err_msg)
+        else:
+            try:
+                headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+                data = {
+                    "model": "whisper-large-v3",
+                    "language": "en"
+                }
+                
+                # Make HTTP POST request to Groq API
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers=headers,
+                    files={"file": (filename, audio_content, file.content_type or "audio/webm")},
+                    data=data,
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    res_json = response.json()
+                    transcript = res_json.get("text", "").strip()
+                    if transcript:
+                        used_engine = "groq"
+                else:
+                    err_msg = f"Groq Whisper API error (status {response.status_code}): {response.text}"
+                    logger.warning(err_msg)
+                    errors.append(err_msg)
+            except Exception as e:
+                err_msg = f"Failed to connect to Groq Whisper API (system might be offline): {str(e)}"
+                logger.warning(err_msg)
+                errors.append(err_msg)
+
+    # 2. Custom STT / Local Piper Path (Offline Fallback or Explicit)
+    if not transcript and (engine == "custom" or (engine == "auto" and errors)):
+        if not settings.CUSTOM_STT_URL:
+            err_msg = "Custom/Local STT URL is not configured."
+            logger.error(err_msg)
+            errors.append(err_msg)
+        else:
+            try:
+                logger.info(f"Attempting offline/local transcription via Custom STT (Piper) at {settings.CUSTOM_STT_URL}...")
+                
+                # Forward audio file to user's locally deployed STT service (e.g. Piper)
+                custom_response = requests.post(
+                    settings.CUSTOM_STT_URL,
+                    files={"file": (filename, audio_content, file.content_type or "audio/webm")},
+                    timeout=15.0
+                )
+                
+                if custom_response.status_code == 200:
+                    res_json = custom_response.json()
+                    # Support multiple potential return formats (text, transcript, transcription, etc.)
+                    if isinstance(res_json, str):
+                        transcript = res_json
+                    elif isinstance(res_json, dict):
+                        transcript = (
+                            res_json.get("text") or 
+                            res_json.get("transcript") or 
+                            res_json.get("transcription") or 
+                            res_json.get("text_transcription")
+                        )
+                        if isinstance(transcript, dict):
+                            transcript = transcript.get("text") or str(transcript)
+                    
+                    if transcript:
+                        transcript = transcript.strip()
+                        used_engine = "custom"
+                else:
+                    err_msg = f"Custom STT service error (status {custom_response.status_code}): {custom_response.text}"
+                    logger.error(err_msg)
+                    errors.append(err_msg)
+            except Exception as e:
+                err_msg = f"Failed to connect to Custom STT service: {str(e)}"
+                logger.error(err_msg)
+                errors.append(err_msg)
+
+    if transcript:
+        logger.info(f"Successfully transcribed audio using engine: {used_engine}")
+        return {
+            "status": "success",
+            "text": transcript,
+            "engine": used_engine,
+            "fallback_occurred": (engine == "auto" and used_engine == "custom")
+        }
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to transcribe audio. All attempted engines failed.",
+                "errors": errors
+            }
+        )
 
 # ----------------- Premium Single Page UI -----------------
 

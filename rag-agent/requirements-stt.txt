@@ -1,0 +1,6 @@
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9
+requests>=2.31.0
+vosk>=0.3.45
+av>=11.0.0
