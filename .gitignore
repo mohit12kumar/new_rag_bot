@@ -26,3 +26,14 @@ rag-agent/.env
 *.ntvs*
 *.njsproj
 *.sln
+
+# Speech-To-Text local model folders
+**/model/
+**/model-*/
+**/vosk-model-*/
+
+# Speech-To-Text temporary audio recordings
+*.webm
+*.wav
+*.ogg
+*.mp3
