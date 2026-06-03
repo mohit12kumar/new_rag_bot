@@ -70,9 +70,6 @@ def get_agent_executor(db_session: Session, model: Optional[str] = None) -> Runn
 
     patch_groq_streaming(llm)
 
-
-
-
     # 2. Define the tools
     tools = [search_documents, web_search, get_current_time]
 
