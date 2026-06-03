@@ -1,17 +1,22 @@
 import os
+import re
 import shutil
 import uuid
 import datetime
 import logging
 import requests
-from typing import List, Dict, Any, Optional
+import wave
+import io
+import urllib.request
+from typing import Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 
+# Import app components
 from config import settings
 from database import get_db
 from exceptions import (
@@ -22,8 +27,7 @@ from exceptions import (
     InvalidDocumentError
 )
 from rag import ingest_file, delete_file_from_store, get_indexed_files
-from tools import retrieved_citations, current_session_id
-from agent import get_agent_executor
+from graph import run_graph
 from memory import (
     ChatMessageModel,
     ChatSessionModel,
@@ -32,6 +36,32 @@ from memory import (
     delete_session,
 )
 from middleware import RequestLoggingMiddleware, setup_cors
+
+
+def _parse_retry_after(error_str: str) -> int:
+    """Parse Groq rate-limit retry delay from error detail string.
+
+    Groq error messages look like:
+      'Please try again in 2s.'
+      'Please try again in 1m30s.'
+      'Please try again in 1m.'
+    Returns seconds as an int (default 60 when not parsable).
+    """
+    s = (error_str or "").lower()
+    # e.g. "1m30s"
+    m = re.search(r'try again in (\d+)m(\d+)s', s)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2))
+    # e.g. "1m"
+    m = re.search(r'try again in (\d+)m', s)
+    if m:
+        return int(m.group(1)) * 60
+    # e.g. "2s" or "2.5s"
+    m = re.search(r'try again in ([\d.]+)s', s)
+    if m:
+        return max(1, int(float(m.group(1))))
+    return 60  # safe default
+
 
 # Configure logging
 logger = logging.getLogger("rag_agent_app")
@@ -50,11 +80,15 @@ app.add_middleware(RequestLoggingMiddleware)
 @app.exception_handler(RAGAgentError)
 async def rag_agent_exception_handler(request: Request, exc: RAGAgentError):
     status_code = 500
+    extra: dict = {}
+
     if isinstance(exc, InvalidDocumentError):
         status_code = 400
     elif isinstance(exc, LLMProviderError):
         if exc.error_code == "GROQ_RATE_LIMIT":
             status_code = 429
+            # Parse retry delay from Groq error message and send to frontend
+            extra["retry_after_seconds"] = _parse_retry_after(exc.details or "")
         elif exc.error_code == "GROQ_AUTH_FAILURE":
             status_code = 401
         elif exc.error_code == "GROQ_API_KEY_MISSING":
@@ -75,7 +109,8 @@ async def rag_agent_exception_handler(request: Request, exc: RAGAgentError):
         content={
             "detail": exc.message,
             "error_code": exc.error_code,
-            "details": exc.details
+            "details": exc.details,
+            **extra,          # includes retry_after_seconds on 429
         }
     )
 
@@ -98,9 +133,13 @@ class ChatRequest(BaseModel):
     model: Optional[str] = None
 
 
-
 class SessionTitleRequest(BaseModel):
     title: str
+
+
+class TTSRequest(BaseModel):
+    text: str
+
 
 # ----------------- API Endpoints -----------------
 
@@ -160,21 +199,17 @@ async def get_messages_endpoint(session_id: str, db: Session = Depends(get_db)):
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
     """
-    Submits user query to the LangChain agent, triggers retrieval 
-    if tools are called, saves output, and returns response with citations.
+    Multi-Agent RAG endpoint. Routes the query through the LangGraph pipeline:
+    Supervisor -> Query Planner -> Memory -> Retrieval -> Web Research -> Synthesis -> Critique
     """
-    # 1. API key verification for Groq
+    # 1. API key verification
     if not settings.GROQ_API_KEY or "your_groq_api" in settings.GROQ_API_KEY.lower():
         raise LLMProviderError(
             message="Groq API Key is missing. Please configure GROQ_API_KEY in the .env file.",
             error_code="GROQ_API_KEY_MISSING"
         )
 
-    # 2. Reset context variable for citations and session
-    retrieved_citations.set([])
-    current_session_id.set(req.session_id)
-
-    # 2.5 Update session title if it is default ("New Conversation" or UUID)
+    # 2. Update session title if still default
     session = db.query(ChatSessionModel).filter_by(session_id=req.session_id).first()
     if session and (session.title == "New Conversation" or session.title == req.session_id):
         new_title = req.message.strip()
@@ -184,40 +219,51 @@ async def chat_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
         db.commit()
 
     current_time = datetime.datetime.now().strftime("%A, %B %d, %Y, %I:%M %p")
-    
-    try:
-        # 3. Retrieve agent with dynamic model
-        agent_executor = get_agent_executor(db, model=req.model)
 
-        # 4. Invoke agent (RunnableWithMessageHistory saves input/output automatically)
-        response = agent_executor.invoke(
-            {"input": req.message, "current_time": current_time},
-            config={"configurable": {"session_id": req.session_id}}
+    try:
+        # 3. Save human message to MySQL
+        human_msg = ChatMessageModel(
+            session_id=req.session_id,
+            role="human",
+            content=req.message
+        )
+        db.add(human_msg)
+        db.commit()
+
+        # 4. Run the multi-agent graph
+        result = run_graph(
+            raw_query=req.message,
+            session_id=req.session_id,
+            current_time=current_time,
+            db_session=db,
+            model=req.model,
         )
 
-        # 5. Extract citations captured from the thread run
-        citations = retrieved_citations.get()
+        final_answer = result["final_answer"]
+        citations    = result["citations"]
+        agent_trace  = result["agent_trace"]
+        confidence   = result["critique_score"]
 
-        # 6. Save citations into MySQL db for the AI message
-        if citations:
-            last_msg = (
-                db.query(ChatMessageModel)
-                .filter_by(session_id=req.session_id)
-                .order_by(ChatMessageModel.id.desc())
-                .first()
-            )
-            if last_msg and last_msg.role == "ai":
-                last_msg.citations = citations
-                db.commit()
+        # 5. Save AI response to MySQL
+        ai_msg = ChatMessageModel(
+            session_id=req.session_id,
+            role="ai",
+            content=final_answer,
+            citations=citations
+        )
+        db.add(ai_msg)
+        db.commit()
 
         return {
-            "response": response["output"],
-            "citations": citations,
-            "session_id": req.session_id
+            "response":        final_answer,
+            "citations":       citations,
+            "session_id":      req.session_id,
+            "agent_trace":     agent_trace,
+            "confidence":      round(confidence, 2),
+            "sub_queries":     result.get("sub_queries_used", []),
         }
 
     except RAGAgentError:
-        # Re-raise custom exceptions so global exception handlers process them correctly
         raise
     except Exception as e:
         err_msg = str(e)
@@ -228,23 +274,17 @@ async def chat_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
                 details=err_msg,
                 error_code="GROQ_RATE_LIMIT"
             )
-        elif "authentication" in err_lower or "api_key" in err_lower or "invalid_api_key" in err_lower or "401" in err_lower:
+        elif "authentication" in err_lower or "api_key" in err_lower or "401" in err_lower:
             raise LLMProviderError(
-                message="Authentication with Groq API failed. Please check that your GROQ_API_KEY in the .env file is correct and active.",
+                message="Authentication with Groq API failed. Please check your GROQ_API_KEY.",
                 details=err_msg,
                 error_code="GROQ_AUTH_FAILURE"
             )
-        elif "connection" in err_lower or "timeout" in err_lower or "connect" in err_lower:
+        elif "connection" in err_lower or "timeout" in err_lower:
             raise LLMProviderError(
-                message="Failed to connect to Groq API. Please verify your internet connection or try again later.",
+                message="Failed to connect to Groq API. Check your internet connection.",
                 details=err_msg,
                 error_code="GROQ_CONNECTION_ERROR"
-            )
-        elif "failed to call a function" in err_lower or "failed_generation" in err_lower or "tool_use_failed" in err_lower:
-            raise LLMProviderError(
-                message="The language model failed to format its tool call correctly. This is a transient Groq formatting issue. Please try asking your question again or rephrase it slightly.",
-                details=err_msg,
-                error_code="GROQ_TOOL_CALL_FAILED"
             )
         elif "database" in err_lower or "sqlalchemy" in err_lower or "mysql" in err_lower:
             raise DatabaseConnectionError(
@@ -252,12 +292,13 @@ async def chat_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
                 details=err_msg
             )
         else:
-            logger.error(f"Error in chat execution: {str(e)}", exc_info=True)
+            logger.error(f"Error in multi-agent chat: {str(e)}", exc_info=True)
             raise RAGAgentError(
                 message=f"An error occurred during chat execution: {err_msg}",
                 details=err_msg,
                 error_code="CHAT_EXECUTION_ERROR"
             )
+
 
 @app.post("/api/upload")
 async def upload_file_endpoint(
@@ -367,8 +408,12 @@ async def delete_file_endpoint(filename: str, session_id: Optional[str] = None):
     return {"status": "success", "message": f"{filename} deleted successfully."}
 
 @app.get("/api/status")
-async def status_endpoint(db: Session = Depends(get_db)):
-    """Check status of connected services (MySQL, Chroma)."""
+async def status_endpoint(session_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Check status of connected services (MySQL, Chroma).
+    
+    Pass ?session_id=<id> to get the indexed document count for the active session.
+    Without session_id the count reflects all documents across all sessions.
+    """
     mysql_ok = False
     try:
         db.execute(text("SELECT 1"))
@@ -379,7 +424,9 @@ async def status_endpoint(db: Session = Depends(get_db)):
     chroma_ok = False
     indexed_files_count = 0
     try:
-        indexed_files = get_indexed_files()
+        # Pass session_id so the counter is scoped to the current session when provided.
+        # get_indexed_files(None) now correctly returns ALL docs for the global view.
+        indexed_files = get_indexed_files(session_id=session_id if session_id else None)
         indexed_files_count = len(indexed_files)
         chroma_ok = True
     except Exception:
@@ -509,6 +556,82 @@ async def speech_to_text_endpoint(
                 "message": "Failed to transcribe audio. All attempted engines failed.",
                 "errors": errors
             }
+        )
+
+# Lazy loading of Piper TTS Voice
+tts_voice = None
+
+def get_tts_voice():
+    global tts_voice
+    if tts_voice is None:
+        try:
+            from piper import PiperVoice
+        except ImportError:
+            logger.error("piper-tts is not installed. Make sure to run pip install -r requirements-stt.txt")
+            raise HTTPException(
+                status_code=500,
+                detail="Piper TTS library is not installed in the environment."
+            )
+
+        model_path = os.path.abspath(settings.TTS_VOICE_MODEL)
+        config_path = os.path.abspath(settings.TTS_VOICE_CONFIG)
+        
+        # Automatic download from Hugging Face if files are missing
+        voice_name = "en_US-lessac-medium"
+        model_url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/{voice_name}.onnx"
+        config_url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/{voice_name}.onnx.json"
+        
+        try:
+            if not os.path.exists(model_path):
+                logger.info(f"Downloading TTS model from {model_url} to {model_path}...")
+                os.makedirs(os.path.dirname(model_path), exist_ok=True)
+                urllib.request.urlretrieve(model_url, model_path)
+                logger.info("TTS Model downloaded successfully.")
+                
+            if not os.path.exists(config_path):
+                logger.info(f"Downloading TTS config from {config_url} to {config_path}...")
+                os.makedirs(os.path.dirname(config_path), exist_ok=True)
+                urllib.request.urlretrieve(config_url, config_path)
+                logger.info("TTS Config downloaded successfully.")
+                
+            logger.info(f"Loading Piper voice model from {model_path}...")
+            tts_voice = PiperVoice.load(model_path, config_path=config_path)
+            logger.info("Piper voice model loaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to load or download Piper TTS voice: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to load Piper voice model: {str(e)}"
+            )
+            
+    return tts_voice
+
+@app.post("/api/tts")
+async def text_to_speech_endpoint(req: TTSRequest):
+    """
+    Synthesize text to speech using local Piper neural engine.
+    Returns wav audio stream.
+    """
+    text_to_speak = req.text.strip()
+    if not text_to_speak:
+        raise HTTPException(status_code=400, detail="Text for speech synthesis cannot be empty.")
+        
+    try:
+        voice = get_tts_voice()
+        
+        wav_io = io.BytesIO()
+        with wave.open(wav_io, "wb") as wav_file:
+            voice.synthesize_wav(text_to_speak, wav_file)
+            
+        wav_io.seek(0)
+        return StreamingResponse(wav_io, media_type="audio/wav")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Speech synthesis error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to synthesize speech: {str(e)}"
         )
 
 # ----------------- Premium Single Page UI -----------------

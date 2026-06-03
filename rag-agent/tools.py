@@ -71,111 +71,86 @@ def search_documents(query: str) -> str:
 @tool("web_search", args_schema=WebSearchInput)
 def web_search(query: str) -> str:
     """
-    FALLBACK ONLY: Search the web for supplemental details about a topic that EXISTS in
-    the uploaded PDF documents but where the document search returned incomplete context.
-
-    Rules (STRICTLY enforced):
-    - MUST only be called after `search_documents` already returned at least one result.
-    - MUST NOT be called for general knowledge, news, coding, or any off-PDF topic.
-    - The search query is automatically anchored to the PDF's content — it cannot drift
-      to unrelated topics.
+    Search the web for supplemental details.
+    - If the query is related to the PDF context, the query is optimized based on PDF snippets.
+    - If the query is out-of-context, the search is executed globally.
     """
-    # ── Gate: block if no PDF results exist for this request ────────────────────
-    citations = retrieved_citations.get()
-    if not citations:
-        return (
-            "⚠️ Web search is not allowed for this question. "
-            "This assistant only answers questions about your uploaded PDF documents. "
-            "No matching content was found in the uploaded files, so this topic is "
-            "outside the scope of your documents. Please upload a relevant PDF or "
-            "ask something related to your existing uploads."
-        )
+    from config import settings
+    from langchain_groq import ChatGroq
+    from langchain_core.messages import SystemMessage, HumanMessage
 
-    # ── Gate: verify if the search query is related to the PDF content using LLM ──
-    snippet_text = " ".join(c.get("snippet", "") for c in citations)
+    # ── Initialize LLM ──
     try:
-        from config import settings
-        from langchain_groq import ChatGroq
-
-        # Initialize LLM specifically for strict relevance verification
         relevance_llm = ChatGroq(
             model="llama-3.1-8b-instant",
             temperature=0.0,
-            groq_api_key=settings.GROQ_API_KEY
+            groq_api_key=settings.GROQ_API_KEY,
+            max_tokens=256
         )
-
-        verification_prompt = (
-            "You are a strict relevance validator. Your task is to determine if a proposed web search query is directly related to the content of the uploaded PDF snippets.\n\n"
-            "Uploaded PDF Snippets:\n"
-            "-------------------\n"
-            f"{snippet_text}\n"
-            "-------------------\n\n"
-            "Proposed Web Search Query:\n"
-            f"{query}\n\n"
-            "Instructions:\n"
-            "1. Analyze if the Proposed Web Search Query is related to the specific topics, concepts, events, or entities described in the Uploaded PDF Snippets.\n"
-            "2. If the query is related to the PDF content (even if asking for a supplemental detail, clarification, or elaboration), output EXACTLY: 'YES'\n"
-            "3. If the query is unrelated (e.g. general knowledge chitchat, coding help, other public figures/events not in the snippets, or unrelated topics), output EXACTLY: 'NO'\n\n"
-            "Relevance (YES/NO):"
-        )
-
-        response = relevance_llm.invoke(verification_prompt)
-        decision = response.content.strip().upper()
-
-        if "NO" in decision and "YES" not in decision:
-            return (
-                "⚠️ Web search is not allowed because the query is not related to the uploaded PDF content. "
-                "This assistant only answers questions about topics present in your uploaded PDF documents."
-            )
     except Exception as e:
-        # Fallback to keyword matching if LLM verification encounters an error
-        pass
+        return f"Failed to initialize LLM for search planning: {str(e)}"
 
-    # ── Build a PDF-context-anchored query ──────────────────────────────────────
-    # Extract the top unique keywords from the retrieved PDF citation snippets.
-    # These keywords ensure the web search stays focused on the PDF's actual subject.
-    _STOPWORDS = {
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "has", "have", "had", "do", "does", "did", "will", "would", "shall",
-        "should", "may", "might", "can", "could", "of", "in", "on", "at",
-        "to", "for", "with", "by", "from", "and", "or", "but", "if", "that",
-        "this", "it", "its", "as", "not", "no", "so", "than", "then", "when",
-        "where", "which", "who", "whom", "what", "how", "all", "each", "both",
-        "such", "into", "through", "during", "before", "after", "above",
-        "below", "between", "out", "up", "about", "against", "also", "just",
-        "any", "more", "other", "same", "only", "over", "under", "again",
-    }
+    # Check if we have PDF citations in context
+    pdf_citations = retrieved_citations.get()
+    
+    is_global = True
+    snippet_text = ""
+    if pdf_citations:
+        snippet_text = " ".join(c.get("snippet", "") for c in pdf_citations)
+        # Check relevance to determine if we should anchor or search globally
+        try:
+            verification_prompt = (
+                "You are a relevance validator. Your task is to determine if a user query is related to the content of the uploaded PDF snippets.\n\n"
+                "Uploaded PDF Snippets:\n"
+                f"{snippet_text}\n\n"
+                "User Query:\n"
+                f"{query}\n\n"
+                "Instructions:\n"
+                "1. Output EXACTLY 'YES' if the query is related to the PDF content.\n"
+                "2. Output EXACTLY 'NO' if the query is unrelated / out of context.\n"
+                "Relevance (YES/NO):"
+            )
+            response = relevance_llm.invoke(verification_prompt)
+            decision = response.content.strip().upper()
+            if "YES" in decision:
+                is_global = False
+        except Exception:
+            is_global = False
 
-    # Collect text from the first 3 citation snippets
-    snippet_text_for_terms = " ".join(c.get("snippet", "")[:200] for c in citations[:3])
-    # Extract meaningful words (length > 3, not stopwords, alphanumeric only)
-    raw_words = [
-        w.strip(".,;:!?\"'()[]") for w in snippet_text_for_terms.split()
-    ]
-    key_terms = []
-    seen_terms: set = set()
-    for w in raw_words:
-        lower = w.lower()
-        if len(lower) > 3 and lower not in _STOPWORDS and lower.isalpha() and lower not in seen_terms:
-            seen_terms.add(lower)
-            key_terms.append(w)
-        if len(key_terms) >= 8:
-            break
+    # ── Build the search query ──
+    anchored_query = query
+    if is_global:
+        try:
+            response = relevance_llm.invoke([
+                SystemMessage(content="You are a web search planner. Given a user query, output ONLY the single optimized web search query string to look up the answer. Do not include any explanations, quotes, or markdown."),
+                HumanMessage(content=f"User query: {query}")
+            ])
+            planned_query = response.content.strip().strip('"')
+            if planned_query:
+                anchored_query = planned_query
+        except Exception:
+            pass
+    else:
+        try:
+            response = relevance_llm.invoke([
+                SystemMessage(content="You are a web search planner for a document Q&A system. Given a user query and relevant document snippets, output ONLY a single optimized web search query string that is anchored to the topics in the document snippets. Do not include explanations, quotes, or markdown."),
+                HumanMessage(content=f"User query: {query}\n\nDocument snippets:\n{snippet_text}")
+            ])
+            planned_query = response.content.strip().strip('"')
+            if planned_query:
+                anchored_query = planned_query
+        except Exception:
+            pass
 
-    # Combine original query with PDF-derived key terms
-    pdf_context = " ".join(key_terms)
-    anchored_query = f"{query} {pdf_context}".strip()
-
-    # ── Execute the anchored web search ─────────────────────────────────────────
+    # ── Execute the search ──
     try:
         from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
         search = DuckDuckGoSearchAPIWrapper()
         results = search.results(anchored_query, max_results=5)
         
         if not results:
-            return f"[Web search anchored to PDF topics: {pdf_context}]\n\nNo good DuckDuckGo Search Result was found"
+            return f"[Web search for query: {anchored_query}]\n\nNo search results found."
             
-        citations = []
         formatted = []
         for r in results:
             snippet = r.get("snippet", "")
@@ -185,12 +160,6 @@ def web_search(query: str) -> str:
             if not snippet:
                 continue
                 
-            citations.append({
-                "source": title or "Web Search Result",
-                "url": link,
-                "snippet": snippet[:200] + "..." if len(snippet) > 200 else snippet
-            })
-            
             formatted.append(
                 f"Web Title: {title}\n"
                 f"Web URL: {link}\n"
@@ -198,10 +167,10 @@ def web_search(query: str) -> str:
                 f"---"
             )
             
-        # Append to existing citations in request context
-        retrieved_citations.get().extend(citations)
+        # We do NOT append web snippets to the retrieved_citations context variables
+        # so that only PDF citations are returned and rendered.
         
-        return f"[Web search anchored to PDF topics: {pdf_context}]\n\n" + "\n\n".join(formatted)
+        return f"[Web search results for: {anchored_query}]\n\n" + "\n\n".join(formatted)
     except Exception as e:
         return f"Web search is currently unavailable: {str(e)}"
 

@@ -20,9 +20,33 @@ class Settings(BaseSettings):
     LLM_MODEL: str = Field(default="llama-3.1-8b-instant")
     LLM_TEMPERATURE: float = Field(default=0.2)
 
+    # ── Model Selection ─────────────────────────────────────────────────────────
+    # All agents use llama-3.1-8b-instant for minimum latency.
+    # Override in .env to swap individual agents to a larger model if needed.
+    SUPERVISOR_MODEL: str = Field(default="llama-3.1-8b-instant")   # JSON routing only
+    SYNTHESIS_MODEL:  str = Field(default="llama-3.1-8b-instant")   # Final answer (8B = fast)
+    FAST_MODEL:       str = Field(default="llama-3.1-8b-instant")   # Planner / critique / memory / web
+
+    # ── Token budgets (smaller = faster decode) ──────────────────────────────
+    # Routing / planning / critique agents only output short JSON → cap tight.
+    # Synthesis needs more room for the full answer.
+    MAX_TOKENS_ROUTING:   int = Field(default=256)    # supervisor, query_planner, critique, memory, web
+    MAX_TOKENS_SYNTHESIS: int = Field(default=1500)   # synthesis final answer
+
+    # ── Multi-Agent Graph Settings ───────────────────────────────────────────
+    MAX_CRITIQUE_RETRIES: int = Field(default=1)          # Max re-retrieval loops before returning as-is
+    CRITIQUE_SCORE_THRESHOLD: float = Field(default=0.7)  # Min confidence score to approve answer
+    GROQ_REQUEST_TIMEOUT: int = Field(default=30)         # Per-request timeout in seconds
+
+
     # Speech-To-Text (STT) Settings
     DEFAULT_STT_ENGINE: str = Field(default="auto")  # "auto", "groq", "custom"
     CUSTOM_STT_URL: str = Field(default="http://127.0.0.1:8001/transcribe")  # Custom/Piper STT endpoint
+
+    # Text-To-Speech (TTS) Settings
+    TTS_VOICE_MODEL: str = Field(default="./models/en_US-lessac-medium.onnx")
+    TTS_VOICE_CONFIG: str = Field(default="./models/en_US-lessac-medium.onnx.json")
+
 
     # MySQL Configuration
     MYSQL_HOST: str = Field(default="localhost")
@@ -46,3 +70,5 @@ settings = Settings()
 # Ensure directories exist
 os.makedirs(settings.DATA_DIR, exist_ok=True)
 os.makedirs(settings.CHROMA_DB_PATH, exist_ok=True)
+os.makedirs(os.path.dirname(settings.TTS_VOICE_MODEL), exist_ok=True)
+

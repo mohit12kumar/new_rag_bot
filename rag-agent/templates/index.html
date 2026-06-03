@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antigravity RAG Agent</title>
-    
+    <title>RAG Agent</title>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Marked Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
+
     <!-- Prism CSS & JS for Code Highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
@@ -34,15 +37,15 @@
             --text-secondary: #9ca3af;
             --text-muted: #6b7280;
             --accent-glow: rgba(139, 92, 246, 0.25);
-            
+
             --purple: #8b5cf6;
             --blue: #3b82f6;
             --emerald: #10b981;
             --rose: #f43f5e;
-            
+
             --font-main: 'Outfit', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            
+
             --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -67,13 +70,16 @@
             width: 6px;
             height: 6px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 99px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.25);
         }
@@ -161,7 +167,8 @@
             group: hover;
         }
 
-        .session-item:hover, .session-item.active {
+        .session-item:hover,
+        .session-item.active {
             background: var(--bg-accent);
             border-color: var(--border-color);
         }
@@ -499,13 +506,17 @@
         .message-bubble p {
             margin-bottom: 12px;
         }
+
         .message-bubble p:last-child {
             margin-bottom: 0;
         }
-        .message-bubble ul, .message-bubble ol {
+
+        .message-bubble ul,
+        .message-bubble ol {
             margin-left: 20px;
             margin-bottom: 12px;
         }
+
         .message-bubble code {
             font-family: var(--font-mono);
             background: rgba(0, 0, 0, 0.3);
@@ -513,12 +524,14 @@
             border-radius: 4px;
             font-size: 0.9em;
         }
+
         .message-bubble pre {
             margin: 12px 0;
             overflow-x: auto;
             border-radius: 8px;
             background: #000000 !important;
         }
+
         .message-bubble pre code {
             background: transparent;
             padding: 0;
@@ -622,8 +635,13 @@
             animation: bounce 1.3s infinite ease-in-out;
         }
 
-        .typing-dot:nth-child(2) { animation-delay: 0.15s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.3s;
+        }
 
         /* Input section styling */
         .input-container {
@@ -859,9 +877,17 @@
             flex-shrink: 0;
         }
 
-        .file-info.pdf i { color: #f43f5e; }
-        .file-info.txt i { color: #3b82f6; }
-        .file-info.md i { color: #10b981; }
+        .file-info.pdf i {
+            color: #f43f5e;
+        }
+
+        .file-info.txt i {
+            color: #3b82f6;
+        }
+
+        .file-info.md i {
+            color: #10b981;
+        }
 
         .file-name-size {
             overflow: hidden;
@@ -945,18 +971,32 @@
 
         /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
         }
 
         /* Loading spinner */
         .loader-spinner {
-            border: 2px solid rgba(255,255,255,0.1);
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             border-top: 2px solid white;
             width: 16px;
@@ -965,8 +1005,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Chat Window Locking Styles */
@@ -998,8 +1043,15 @@
         }
 
         @keyframes scaleUp {
-            from { transform: scale(0.92); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from {
+                transform: scale(0.92);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .lock-icon-container {
@@ -1060,10 +1112,11 @@
                 right: 0;
                 top: 72px;
                 bottom: 0;
-                box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+                box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
                 z-index: 99;
                 transform: translateX(100%);
             }
+
             .files-drawer.active-mobile {
                 transform: translateX(0);
                 display: flex;
@@ -1106,17 +1159,323 @@
                 transform: scale(1);
                 box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
             }
+
             70% {
                 transform: scale(1.05);
                 box-shadow: 0 0 0 10px rgba(244, 63, 94, 0);
             }
+
             100% {
                 transform: scale(1);
                 box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
             }
         }
+
+        /* TTS Styling */
+        .tts-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            font-size: 0.85rem;
+            margin-left: 6px;
+        }
+
+        .tts-btn:hover {
+            color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .tts-btn.playing {
+            color: var(--emerald);
+            animation: tts-pulse 1.5s infinite;
+        }
+
+        .tts-btn.loading {
+            color: var(--blue);
+        }
+
+        @keyframes tts-pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        .tts-toggle-container {
+            display: flex;
+            align-items: center;
+            margin-left: 8px;
+            margin-right: 4px;
+            user-select: none;
+        }
+
+        .tts-toggle-checkbox {
+            display: none;
+        }
+
+        .tts-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            height: 38px;
+        }
+
+        .tts-toggle-label:hover {
+            border-color: var(--purple);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tts-toggle-checkbox:checked+.tts-toggle-label {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: var(--purple);
+            color: #c084fc;
+        }
+
+        /* Agent Trace Panel */
+        .agent-trace {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .agent-trace-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition-smooth);
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        .agent-trace-toggle:hover {
+            color: var(--text-secondary);
+        }
+
+        .agent-trace-body {
+            display: none;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .agent-trace-body.open {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .agent-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 9px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+        }
+
+        .confidence-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        .confidence-badge.high {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .confidence-badge.med {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .confidence-badge.low {
+            background: rgba(244, 63, 94, 0.15);
+            color: #f43f5e;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        /* ── Rate-Limit Modal ──────────────────────────────────────────── */
+        .rate-limit-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .rate-limit-overlay.visible {
+            display: flex;
+            animation: fadeIn 0.25s ease-out;
+        }
+        .rate-limit-card {
+            background: linear-gradient(135deg, #121824, #1a2236);
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            border-radius: 20px;
+            padding: 40px 36px;
+            max-width: 440px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(244,63,94,0.1);
+            animation: scaleUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .rl-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(244, 63, 94, 0.12);
+            border: 2px solid rgba(244, 63, 94, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: var(--rose);
+            animation: pulse 2s infinite;
+        }
+        .rl-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+        .rl-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .rl-saved-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--emerald);
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        .rl-countdown-wrap {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+        }
+        .rl-countdown-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .rl-countdown-timer {
+            font-family: var(--font-mono);
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--rose);
+            letter-spacing: 0.05em;
+        }
+        .rl-progress {
+            height: 4px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .rl-progress-bar {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--rose), #fb923c);
+            transition: width 1s linear;
+        }
+        .rl-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .rl-btn-new {
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition-smooth);
+        }
+        .rl-btn-new:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139,92,246,0.35);
+        }
+        .rl-btn-dismiss {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .rl-btn-dismiss:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Sidebar (Conversations) -->
@@ -1130,7 +1489,7 @@
                 <span class="status-dot green" id="status-dot-indicator"></span>
             </div>
         </div>
-        
+
         <button class="btn-new-chat" onclick="createNewSession()">
             <i class="fa-solid fa-plus"></i>
             <span>New Conversation</span>
@@ -1139,13 +1498,14 @@
         <!-- Search Bar by Session ID -->
         <div class="search-sessions-container">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="session-search-input" placeholder="Search by Session ID..." oninput="filterSessions()">
+            <input type="text" id="session-search-input" placeholder="Search conversations..."
+                oninput="filterSessions()">
         </div>
-        
+
         <div class="session-list" id="session-list-container">
             <!-- Loaded dynamically -->
         </div>
-        
+
         <!-- Status indicator panel -->
         <div class="system-status">
             <div class="status-row">
@@ -1169,7 +1529,7 @@
 
     <!-- Main Container -->
     <div class="main-container">
-        
+
         <!-- Navbar -->
         <div class="navbar">
             <div class="active-chat-title" id="chat-title-display">Select or create a conversation</div>
@@ -1180,10 +1540,10 @@
                 </button>
             </div>
         </div>
-        
+
         <!-- Workspace Split (Messages & Files) -->
         <div class="workspace-split">
-            
+
             <!-- Chat Window -->
             <div class="chat-area">
                 <!-- Lock screen overlay -->
@@ -1193,7 +1553,8 @@
                             <i class="fa-solid fa-file-pdf fa-fade" id="locking-icon"></i>
                         </div>
                         <h3>Chat is locked</h3>
-                        <p>This assistant only answers questions based on your documents. To begin a conversation, please upload a document (PDF, TXT, or MD) first.</p>
+                        <p>This assistant only answers questions based on your documents. To begin a conversation,
+                            please upload a document (PDF, TXT, or MD) first.</p>
                         <button class="upload-trigger-btn" onclick="triggerFileInput()">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
                             <span>Upload Document</span>
@@ -1204,7 +1565,7 @@
                 <div class="messages-container" id="messages-container">
                     <!-- Loaded dynamically -->
                 </div>
-                
+
                 <div class="input-container" id="chat-input-container">
                     <div class="input-box-wrapper">
                         <select class="model-select" id="model-select-field">
@@ -1213,21 +1574,29 @@
                             <option value="groq:openai/gpt-oss-120b">GPT OSS 120B</option>
                             <option value="groq:openai/gpt-oss-20b">GPT OSS 20B</option>
                         </select>
-                        <textarea class="chat-input" id="chat-input-field" placeholder="Ask a question about your indexed files..." onkeydown="handleInputKeydown(event)" rows="1"></textarea>
+                        <div class="tts-toggle-container" title="Auto-read responses aloud">
+                            <input type="checkbox" id="tts-autoplay-toggle" class="tts-toggle-checkbox">
+                            <label for="tts-autoplay-toggle" class="tts-toggle-label">
+                                <i class="fa-solid fa-volume-high"></i>
+                                <span>Auto-Read</span>
+                            </label>
+                        </div>
 
-                        <button class="mic-btn" id="mic-record-btn" onclick="toggleAudioRecording(event)" title="Speak your query">
+                        <textarea class="chat-input" id="chat-input-field"
+                            placeholder="Ask a question about your indexed files..."
+                            onkeydown="handleInputKeydown(event)" rows="1"></textarea>
+
+                        <button class="mic-btn" id="mic-record-btn" onclick="toggleAudioRecording(event)"
+                            title="Speak your query">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                         <button class="send-btn" id="send-message-btn" onclick="submitMessage()" disabled>
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
-                    <div class="input-footer">
-                        Agent maintains context and queries MySQL / Chroma vector database automatically.
-                    </div>
                 </div>
             </div>
-            
+
             <!-- Files Side-Drawer -->
             <div class="files-drawer" id="files-drawer-panel">
                 <div class="drawer-header">
@@ -1239,15 +1608,16 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                
+
                 <!-- Upload Drop-zone -->
-                <div class="upload-zone" onclick="triggerFileInput()" ondragover="event.preventDefault()" ondrop="handleFileDrop(event)">
+                <div class="upload-zone" onclick="triggerFileInput()" ondragover="event.preventDefault()"
+                    ondrop="handleFileDrop(event)">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <p>Drag & drop document</p>
                     <span>Supports PDF, TXT, MD (Max 15MB)</span>
                     <input type="file" id="file-input" onchange="handleFileSelected(event)" accept=".pdf,.txt,.md">
                 </div>
-                
+
                 <!-- File listing -->
                 <div class="file-list-container">
                     <div class="file-list-title">Uploaded Files</div>
@@ -1256,13 +1626,47 @@
                     </div>
                 </div>
             </div>
-            
+
         </div>
-        
+
     </div>
 
     <!-- Hover Detail Popup for citations -->
     <div class="citation-detail-popup" id="citation-popup"></div>
+
+    <!-- Rate-Limit Modal -->
+    <div class="rate-limit-overlay" id="rate-limit-overlay">
+        <div class="rate-limit-card">
+            <div class="rl-icon-wrap">
+                <i class="fa-solid fa-gauge-simple-high"></i>
+            </div>
+            <div class="rl-title">Token Limit Exceeded</div>
+            <p class="rl-subtitle">
+                The Groq API token quota for this session has been reached.
+                Your conversation has been saved automatically.
+            </p>
+            <div class="rl-saved-badge">
+                <i class="fa-solid fa-circle-check"></i>
+                Session saved &mdash; your messages are safe
+            </div>
+            <div class="rl-countdown-wrap">
+                <div class="rl-countdown-label">Quota refills in</div>
+                <div class="rl-countdown-timer" id="rl-timer">00:60</div>
+                <div class="rl-progress">
+                    <div class="rl-progress-bar" id="rl-progress-bar" style="width:100%"></div>
+                </div>
+            </div>
+            <div class="rl-actions">
+                <button class="rl-btn-new" onclick="rateLimitStartNewChat()">
+                    <i class="fa-solid fa-plus"></i>
+                    Start New Chat
+                </button>
+                <button class="rl-btn-dismiss" onclick="hideRateLimitModal()">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Notification Toast -->
     <div class="toast" id="toast-notification">
@@ -1273,13 +1677,16 @@
     <script>
         let currentSessionId = null;
         let isSending = false;
-        
+
         // Speech-To-Text (STT) Variables
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
         let recordingDurationInterval = null;
-        
+
+        // Rate-limit countdown state
+        let _rlCountdownInterval = null;
+
         // Configure marked options
         marked.setOptions({
             breaks: true,
@@ -1290,15 +1697,18 @@
         window.addEventListener('DOMContentLoaded', () => {
             fetchSystemStatus();
             loadSessions();
-            loadFiles();
+            // NOTE: loadFiles() is intentionally NOT called here.
+            // Files are session-scoped: the backend returns [] when no session_id
+            // is provided. loadFiles() is called inside selectSession() once a
+            // session is actually active, so the correct files are always shown.
             updateSTTDropdownBasedOnNetwork();
-            
+
             // Poll system status every 15 seconds
             setInterval(fetchSystemStatus, 15000);
-            
+
             // Textarea auto-height adjustment
             const textarea = document.getElementById('chat-input-field');
-            textarea.addEventListener('input', function() {
+            textarea.addEventListener('input', function () {
                 this.style.height = 'auto';
                 this.style.height = (this.scrollHeight) + 'px';
             });
@@ -1309,9 +1719,9 @@
             const toast = document.getElementById('toast-notification');
             const icon = document.getElementById('toast-icon');
             const msgEl = document.getElementById('toast-message');
-            
+
             msgEl.textContent = message;
-            
+
             if (type === 'success') {
                 toast.classList.add('success');
                 icon.className = 'fa-solid fa-circle-check';
@@ -1319,9 +1729,9 @@
                 toast.classList.remove('success');
                 icon.className = 'fa-solid fa-triangle-exclamation';
             }
-            
+
             toast.classList.add('show');
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 4000);
@@ -1330,31 +1740,37 @@
         // ----------------- System Status API -----------------
         async function fetchSystemStatus() {
             try {
-                const response = await fetch('/api/status');
+                // Pass the active session_id so the "Indexed Documents" counter
+                // reflects only the current session's uploaded files.
+                let statusUrl = '/api/status';
+                if (currentSessionId) {
+                    statusUrl += `?session_id=${encodeURIComponent(currentSessionId)}`;
+                }
+                const response = await fetch(statusUrl);
                 const data = await response.json();
-                
+
                 const mysqlVal = document.getElementById('status-mysql');
                 const chromaVal = document.getElementById('status-chroma');
                 const statusDot = document.getElementById('status-dot-indicator');
                 const docsCount = document.getElementById('status-docs-count');
-                
+
                 // MySQL indicator
                 if (data.mysql === 'connected') {
                     mysqlVal.innerHTML = '<span class="status-dot green"></span> Connected';
                 } else {
                     mysqlVal.innerHTML = '<span class="status-dot red"></span> Disconnected';
                 }
-                
+
                 // Chroma indicator
                 if (data.chroma === 'connected') {
                     chromaVal.innerHTML = '<span class="status-dot green"></span> Connected';
                 } else {
                     chromaVal.innerHTML = '<span class="status-dot red"></span> Disconnected';
                 }
-                
+
                 // Docs Count
                 docsCount.textContent = data.indexed_documents;
-                
+
                 // Global status dot
                 if (data.status === 'online') {
                     statusDot.className = 'status-dot green';
@@ -1371,22 +1787,22 @@
             try {
                 const response = await fetch('/api/sessions');
                 const sessions = await response.json();
-                
+
                 const container = document.getElementById('session-list-container');
                 container.innerHTML = '';
-                
+
                 if (sessions.length === 0) {
                     // Create a default session if empty
                     await createNewSession();
                     return;
                 }
-                
+
                 sessions.forEach(s => {
                     const el = document.createElement('div');
                     el.className = `session-item ${s.session_id === currentSessionId ? 'active' : ''}`;
                     el.setAttribute('onclick', `selectSession('${s.session_id}')`);
                     el.id = `session-${s.session_id}`;
-                    
+
                     el.innerHTML = `
                         <div class="session-details">
                             <i class="fa-regular fa-message"></i>
@@ -1403,10 +1819,10 @@
                     `;
                     container.appendChild(el);
                 });
-                
+
                 // Filter the newly loaded sessions immediately based on the search query
                 filterSessions();
-                
+
                 // Sync active session title with the top navbar
                 if (currentSessionId) {
                     const activeSession = sessions.find(s => s.session_id === currentSessionId);
@@ -1414,7 +1830,7 @@
                         document.getElementById('chat-title-display').textContent = activeSession.title;
                     }
                 }
-                
+
                 // Select active session if none set
                 if (!currentSessionId && sessions.length > 0) {
                     selectSession(sessions[0].session_id);
@@ -1427,11 +1843,11 @@
         function filterSessions() {
             const query = document.getElementById('session-search-input')?.value.trim().toLowerCase() || '';
             const sessionItems = document.querySelectorAll('.session-item');
-            
+
             sessionItems.forEach(el => {
                 const sessionId = el.getAttribute('id').replace('session-', '').toLowerCase();
                 const titleText = el.querySelector('.session-title').textContent.toLowerCase();
-                
+
                 if (sessionId.includes(query) || titleText.includes(query)) {
                     el.style.display = 'flex';
                 } else {
@@ -1455,21 +1871,21 @@
         async function selectSession(sessionId) {
             // Remove active classes
             document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
-            
+
             currentSessionId = sessionId;
             const el = document.getElementById(`session-${sessionId}`);
             if (el) el.classList.add('active');
-            
+
             // Set chat header
             const titleText = document.getElementById(`session-title-${sessionId}`)?.textContent || "Chat";
             document.getElementById('chat-title-display').textContent = titleText;
-            
+
             // Enable text input
             document.getElementById('send-message-btn').disabled = false;
-            
+
             // Load messages
             await loadMessages(sessionId);
-            
+
             // Load files associated with this session
             await loadFiles();
         }
@@ -1477,7 +1893,7 @@
         async function renameSessionPrompt(sessionId) {
             const currentTitle = document.getElementById(`session-title-${sessionId}`).textContent;
             const newTitle = prompt("Rename conversation thread:", currentTitle);
-            
+
             if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
                 try {
                     const response = await fetch(`/api/sessions/${sessionId}`, {
@@ -1525,20 +1941,20 @@
         async function loadMessages(sessionId) {
             const messagesContainer = document.getElementById('messages-container');
             messagesContainer.innerHTML = '';
-            
+
             try {
                 const response = await fetch(`/api/sessions/${sessionId}/messages`);
                 const messages = await response.json();
-                
+
                 if (messages.length === 0) {
                     renderWelcomeScreen();
                     return;
                 }
-                
+
                 messages.forEach(msg => {
                     appendMessageBubble(msg.role, msg.content, msg.citations);
                 });
-                
+
                 scrollToBottom();
             } catch (err) {
                 showToast("Failed to fetch messages for this session.");
@@ -1577,16 +1993,16 @@
             input.dispatchEvent(new Event('input'));
         }
 
-        function appendMessageBubble(role, content, citations = []) {
+        function appendMessageBubble(role, content, citations = [], agentTrace = [], confidence = null) {
             const container = document.getElementById('messages-container');
-            
+
             // Remove welcome screen if present
             const welcome = container.querySelector('.welcome-screen');
             if (welcome) welcome.remove();
-            
+
             const row = document.createElement('div');
             row.className = `message-row ${role === 'human' ? 'human' : 'ai'}`;
-            
+
             // Format HTML contents
             let parsedContent = content;
             if (role === 'ai') {
@@ -1598,7 +2014,7 @@
                 tempDiv.appendChild(textNode);
                 parsedContent = tempDiv.innerHTML.replace(/\\n/g, '<br>');
             }
-            
+
             let citationsHtml = '';
             if (role === 'ai' && citations && citations.length > 0) {
                 citationsHtml = `
@@ -1609,37 +2025,77 @@
                         </div>
                         <div class="citations-list">
                             ${citations.map((c, index) => {
-                                const isWeb = !!c.url;
-                                const iconClass = isWeb ? 'fa-solid fa-globe' : 'fa-solid fa-file-lines';
-                                const label = isWeb ? c.source : `${c.source} (Page ${c.page})`;
-                                return `
+                    const isWeb = !!c.url;
+                    const iconClass = isWeb ? 'fa-solid fa-globe' : 'fa-solid fa-file-lines';
+                    const label = isWeb ? c.source : `${c.source} (Page ${c.page})`;
+                    return `
                                     <span class="citation-tag" 
                                           onclick="showCitationPopup(event, '${escapeQuote(c.source)}', ${c.page || 'null'}, '${escapeQuote(c.snippet)}', '${escapeQuote(c.url || '')}')">
                                         <i class="${iconClass}"></i>
                                         ${label}
                                     </span>
                                 `;
-                            }).join('')}
+                }).join('')}
                         </div>
                     </div>
                 `;
             }
-            
+
+            // Build TTS speaker button for AI messages
+            const ttsId = 'tts-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+            const ttsBtnHtml = role === 'ai'
+                ? `<button class="tts-btn" id="${ttsId}" onclick="playSpeech(this)" title="Read aloud" data-text="${escapeForAttr(content)}"><i class="fa-solid fa-volume-high"></i></button>`
+                : '';
+
+            // Agent trace panel (AI only)
+            let traceHtml = '';
+            if (role === 'ai' && agentTrace && agentTrace.length > 0) {
+                const traceId = 'trace-' + Date.now();
+                const confScore = confidence != null ? parseFloat(confidence) : null;
+                let confBadge = '';
+                if (confScore !== null) {
+                    const cls = confScore >= 0.7 ? 'high' : confScore >= 0.4 ? 'med' : 'low';
+                    confBadge = `<span class="confidence-badge ${cls}"><i class="fa-solid fa-gauge-high"></i>${Math.round(confScore * 100)}%</span>`;
+                }
+                const chips = agentTrace.map(a =>
+                    `<span class="agent-chip"><i class="fa-solid fa-circle-nodes"></i>${a}</span>`
+                ).join('');
+                traceHtml = `
+                    <div class="agent-trace">
+                        <button class="agent-trace-toggle" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('i').classList.toggle('fa-chevron-down'); this.querySelector('i').classList.toggle('fa-chevron-right');">
+                            <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
+                            Agents: ${agentTrace.filter(a => !a.includes('skipped')).length} ran
+                            ${confBadge}
+                        </button>
+                        <div class="agent-trace-body" id="${traceId}">
+                            ${chips}
+                        </div>
+                    </div>
+                `;
+            }
+
             row.innerHTML = `
                 <div class="message-wrapper">
                     <div class="message-bubble">
                         ${parsedContent}
                         ${citationsHtml}
+                        ${traceHtml}
                     </div>
-                    <div class="message-meta">${role === 'human' ? 'User' : 'Agent'}</div>
+                    <div class="message-meta">${role === 'human' ? 'User' : `Agent ${ttsBtnHtml}`}</div>
                 </div>
             `;
-            
+
             container.appendChild(row);
-            
+
             // Highlight code blocks
             if (role === 'ai') {
                 Prism.highlightAllUnder(row);
+
+                // Auto-read if toggle is on
+                if (document.getElementById('tts-autoplay-toggle')?.checked) {
+                    const btn = row.querySelector('.tts-btn');
+                    if (btn) playSpeech(btn);
+                }
             }
         }
 
@@ -1662,27 +2118,27 @@
             } else {
                 headerText = `<i class="${iconClass}"></i> ${source}${page ? ` - Page ${page}` : ''}`;
             }
-            
+
             popup.innerHTML = `
                 <strong style="color: var(--text-primary); display:block; margin-bottom: 6px;">
                     ${headerText}
                 </strong>
                 <span style="display:block; max-height: 150px; overflow-y: auto; white-space: pre-wrap;">"${snippet}"</span>
             `;
-            
+
             popup.style.display = 'block';
-            
+
             const rect = event.target.getBoundingClientRect();
             // Position popup above/near tag
             popup.style.top = `${rect.top + window.scrollY - popup.offsetHeight - 10}px`;
             popup.style.left = `${Math.min(rect.left, window.innerWidth - popup.offsetWidth - 20)}px`;
-            
+
             // Click outside or mouseleave to close
             const closeHandler = () => {
                 popup.style.display = 'none';
                 document.removeEventListener('click', closeHandler);
             };
-            
+
             setTimeout(() => {
                 document.addEventListener('click', closeHandler);
             }, 100);
@@ -1690,11 +2146,11 @@
 
         function appendTypingIndicator() {
             const container = document.getElementById('messages-container');
-            
+
             const row = document.createElement('div');
             row.className = 'message-row ai';
             row.id = 'typing-indicator-row';
-            
+
             row.innerHTML = `
                 <div class="message-wrapper">
                     <div class="typing-indicator">
@@ -1704,7 +2160,7 @@
                     </div>
                 </div>
             `;
-            
+
             container.appendChild(row);
             scrollToBottom();
         }
@@ -1724,26 +2180,26 @@
         // ----------------- Chat Interaction API -----------------
         async function submitMessage() {
             if (isSending || !currentSessionId) return;
-            
+
             const input = document.getElementById('chat-input-field');
             const message = input.value.trim();
             if (message === '') return;
-            
+
             isSending = true;
             input.value = '';
             input.style.height = '48px'; // Reset textarea height
             document.getElementById('send-message-btn').disabled = true;
-            
+
             // 1. Add human message bubble
             appendMessageBubble('human', message);
             scrollToBottom();
-            
+
             // 2. Add typing indicator
             appendTypingIndicator();
-            
+
             const modelVal = document.getElementById('model-select-field').value;
             const [provider, model] = modelVal.split(':');
-            
+
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -1755,29 +2211,34 @@
                         model: model
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 removeTypingIndicator();
-                
+
                 if (response.ok) {
-                    // 3. Add AI message bubble with citations
-                    appendMessageBubble('ai', data.response, data.citations);
+                    // 3. Add AI message bubble with citations + agent trace
+                    appendMessageBubble('ai', data.response, data.citations,
+                        data.agent_trace || [], data.confidence);
                     scrollToBottom();
-                    
+
                     // Update document status details
                     fetchSystemStatus();
-                    
+
                     // Reload sessions to update title if it was the first message
                     await loadSessions();
+                } else if (response.status === 429 || data.error_code === 'GROQ_RATE_LIMIT') {
+                    // ── Rate limit hit ───────────────────────────────────────
+                    const waitSec = data.retry_after_seconds || 60;
+                    showRateLimitModal(waitSec);
                 } else {
                     showToast(data.detail || "Error connecting to AI backend.");
-                    appendMessageBubble('ai', `⚠️ **Error**: ${data.detail || "Unable to complete request."}`);
+                    appendMessageBubble('ai', `[Error]: ${data.detail || "Unable to complete request."}`);
                 }
             } catch (err) {
                 removeTypingIndicator();
                 showToast("Request failed. Is the API server running?");
-                appendMessageBubble('ai', `⚠️ **Network Error**: Connection to server refused.`);
+                appendMessageBubble('ai', `[Network Error]: Connection to server refused.`);
             } finally {
                 isSending = false;
                 document.getElementById('send-message-btn').disabled = false;
@@ -1790,6 +2251,55 @@
                 event.preventDefault();
                 submitMessage();
             }
+        }
+
+        // ── Rate-Limit Modal ────────────────────────────────────────────────
+        function showRateLimitModal(totalSeconds) {
+            // Clear any running countdown
+            if (_rlCountdownInterval) clearInterval(_rlCountdownInterval);
+
+            const overlay   = document.getElementById('rate-limit-overlay');
+            const timerEl   = document.getElementById('rl-timer');
+            const barEl     = document.getElementById('rl-progress-bar');
+
+            let remaining = totalSeconds;
+
+            function fmt(s) {
+                const m = Math.floor(s / 60);
+                const sec = s % 60;
+                return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+            }
+
+            timerEl.textContent = fmt(remaining);
+            barEl.style.width = '100%';
+            overlay.classList.add('visible');
+
+            _rlCountdownInterval = setInterval(() => {
+                remaining--;
+                timerEl.textContent = fmt(Math.max(0, remaining));
+                barEl.style.width = `${Math.max(0, (remaining / totalSeconds) * 100)}%`;
+
+                if (remaining <= 0) {
+                    clearInterval(_rlCountdownInterval);
+                    _rlCountdownInterval = null;
+                    // Auto-dismiss and allow the user to try again
+                    hideRateLimitModal();
+                    showToast('Token quota refilled — you can continue chatting!', 'success');
+                }
+            }, 1000);
+        }
+
+        function hideRateLimitModal() {
+            document.getElementById('rate-limit-overlay').classList.remove('visible');
+            if (_rlCountdownInterval) {
+                clearInterval(_rlCountdownInterval);
+                _rlCountdownInterval = null;
+            }
+        }
+
+        async function rateLimitStartNewChat() {
+            hideRateLimitModal();
+            await createNewSession();
         }
 
         // ----------------- File Management Drawer API -----------------
@@ -1824,13 +2334,13 @@
                 showToast("File is too large. Maximum size is 15MB.");
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('file', file);
             if (currentSessionId) {
                 formData.append('session_id', currentSessionId);
             }
-            
+
             // Add a temporary loading card in UI
             const listContainer = document.getElementById('files-list-container');
             const tempId = 'file-uploading-' + Date.now();
@@ -1850,16 +2360,16 @@
                 <div class="loader-spinner"></div>
             `;
             listContainer.insertBefore(tempCard, listContainer.firstChild);
-            
+
             try {
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData
                 });
                 const data = await response.json();
-                
+
                 tempCard.remove();
-                
+
                 if (response.ok) {
                     showToast(`"${file.name}" indexed successfully into Vector DB.`, "success");
                     loadFiles();
@@ -1880,14 +2390,14 @@
             const messagesContainer = document.getElementById('messages-container');
             const inputContainer = document.getElementById('chat-input-container');
             const drawer = document.getElementById('files-drawer-panel');
-            
+
             if (!lockScreen || !messagesContainer || !inputContainer) return;
-            
+
             if (isLocked) {
                 lockScreen.style.display = 'flex';
                 messagesContainer.style.display = 'none';
                 inputContainer.style.display = 'none';
-                
+
                 // Automatically expand the Knowledge Base side drawer so the upload drop-zone is visible
                 if (drawer) {
                     drawer.classList.remove('collapsed');
@@ -1910,10 +2420,10 @@
                 }
                 const response = await fetch(url);
                 const files = await response.json();
-                
+
                 const list = document.getElementById('files-list-container');
                 list.innerHTML = '';
-                
+
                 if (files.length === 0) {
                     list.innerHTML = `
                         <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">
@@ -1923,17 +2433,17 @@
                     toggleChatWindowLock(true);
                     return;
                 }
-                
+
                 toggleChatWindowLock(false);
-                
+
                 files.forEach(f => {
                     const card = document.createElement('div');
                     card.className = 'file-card';
-                    
+
                     const ext = f.filename.split('.').pop().toLowerCase();
                     let extClass = 'txt';
                     let iconClass = 'fa-file-lines';
-                    
+
                     if (ext === 'pdf') {
                         extClass = 'pdf';
                         iconClass = 'fa-file-pdf';
@@ -1941,9 +2451,9 @@
                         extClass = 'md';
                         iconClass = 'fa-file-code';
                     }
-                    
+
                     const sizeStr = formatBytes(f.size_bytes);
-                    
+
                     card.innerHTML = `
                         <div class="file-info ${extClass}">
                             <i class="fa-solid ${iconClass}"></i>
@@ -1999,7 +2509,7 @@
         }
 
         // ----------------- Speech-To-Text (STT) Logic -----------------
-        
+
         // Auto-detect browser connection state to show helpful alerts
         window.addEventListener('online', updateSTTDropdownBasedOnNetwork);
         window.addEventListener('offline', updateSTTDropdownBasedOnNetwork);
@@ -2012,9 +2522,9 @@
 
         async function toggleAudioRecording(event) {
             if (event) event.preventDefault();
-            
+
             const micBtn = document.getElementById('mic-record-btn');
-            
+
             if (isRecording) {
                 stopRecording();
             } else {
@@ -2031,9 +2541,9 @@
         function startRecording(stream) {
             const micBtn = document.getElementById('mic-record-btn');
             const textarea = document.getElementById('chat-input-field');
-            
+
             audioChunks = [];
-            
+
             // Check browser supported audio formats (WebM/OGG/default fallback)
             let options = { mimeType: 'audio/webm' };
             if (!MediaRecorder.isTypeSupported('audio/webm')) {
@@ -2058,15 +2568,15 @@
             mediaRecorder.onstop = async () => {
                 // Release audio tracks
                 stream.getTracks().forEach(track => track.stop());
-                
+
                 // Compile chunks
                 const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                
+
                 // Reset button state
                 micBtn.classList.remove('recording');
                 micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
                 textarea.placeholder = "Ask a question about your indexed files...";
-                
+
                 if (audioBlob.size > 1000) { // minimum size to avoid transcribing silence
                     await sendAudioForTranscription(audioBlob);
                 } else {
@@ -2078,10 +2588,10 @@
             isRecording = true;
             micBtn.classList.add('recording');
             micBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
-            
+
             let seconds = 0;
             textarea.placeholder = "Listening... Speak now. (0s)";
-            
+
             recordingDurationInterval = setInterval(() => {
                 seconds++;
                 textarea.placeholder = `Listening... Speak now. (${seconds}s)`;
@@ -2107,32 +2617,32 @@
             const textarea = document.getElementById('chat-input-field');
             const originalPlaceholder = textarea.placeholder;
             const originalValue = textarea.value;
-            
+
             textarea.disabled = true;
             textarea.placeholder = "Transcribing voice...";
-            
+
             // Set engine to auto (which tries Groq first and falls back to Piper local STT)
             let sttEngine = 'auto';
-            
+
             // If client-side browser is offline, directly instruct the backend to use the local custom STT (Piper)
             if (!navigator.onLine) {
                 sttEngine = 'custom';
             }
-            
+
             const formData = new FormData();
             // Append file
             const fileExtension = audioBlob.type.includes('ogg') ? 'ogg' : 'webm';
             formData.append('file', audioBlob, `recording.${fileExtension}`);
             formData.append('engine', sttEngine);
-            
+
             try {
                 const response = await fetch('/api/stt', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok && result.status === 'success') {
                     // Update input box with transcript
                     if (originalValue) {
@@ -2140,10 +2650,10 @@
                     } else {
                         textarea.value = result.text;
                     }
-                    
+
                     // Trigger input event to adjust textarea height
                     textarea.dispatchEvent(new Event('input'));
-                    
+
                     // Show notification detailing the engine used, especially on fallback
                     if (result.fallback_occurred) {
                         showToast("Groq offline/failed. Automatically transcribed using Piper (local STT).", "success");
@@ -2165,6 +2675,140 @@
                 textarea.focus();
             }
         }
+
+        // ----------------- Text-To-Speech (TTS) Logic - Piper -----------------
+
+        let currentTTSAudio = null;   // currently playing Audio object
+        let currentTTSBtn = null;   // currently active speaker button
+
+        /**
+         * Strip Markdown, code fences, URLs, and citation tags from text
+         * so the TTS engine receives clean, natural speech.
+         */
+        function cleanTextForTTS(raw) {
+            return raw
+                // Remove fenced code blocks (``` ... ```)
+                .replace(/```[\s\S]*?```/g, ' ')
+                // Remove inline code
+                .replace(/`[^`]*`/g, ' ')
+                // Remove Markdown headings (#, ##, ###)
+                .replace(/^#{1,6}\s+/gm, '')
+                // Remove bold/italic markers
+                .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+                // Remove URLs
+                .replace(/https?:\/\/\S+/g, '')
+                // Remove Markdown links [text](url)
+                .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+                // Remove HTML tags
+                .replace(/<[^>]+>/g, ' ')
+                // Collapse multiple spaces/newlines
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        /**
+         * Escape text safely for use in an HTML data attribute.
+         */
+        function escapeForAttr(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        /**
+         * Play or stop TTS for an AI message.
+         * Called by clicking the speaker button next to a message.
+         */
+        async function playSpeech(btn) {
+            // If this button is already playing — stop it
+            if (currentTTSBtn === btn && currentTTSAudio) {
+                currentTTSAudio.pause();
+                currentTTSAudio = null;
+                btn.classList.remove('playing');
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                currentTTSBtn = null;
+                return;
+            }
+
+            // Stop any other currently playing audio
+            if (currentTTSAudio) {
+                currentTTSAudio.pause();
+                currentTTSAudio = null;
+            }
+            if (currentTTSBtn) {
+                currentTTSBtn.classList.remove('playing');
+                currentTTSBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+            }
+
+            // Get raw text from data attribute and clean it
+            const rawText = btn.getAttribute('data-text') || '';
+            const cleanText = cleanTextForTTS(rawText);
+
+            if (!cleanText) {
+                showToast('Nothing to read aloud.', 'error');
+                return;
+            }
+
+            // Show loading state
+            btn.classList.add('loading');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            currentTTSBtn = btn;
+
+            try {
+                const response = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: cleanText })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || `TTS error ${response.status}`);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                currentTTSAudio = audio;
+
+                // Show playing state
+                btn.classList.remove('loading');
+                btn.classList.add('playing');
+                btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+
+                audio.play();
+
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    btn.classList.remove('playing');
+                    btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                    currentTTSAudio = null;
+                    currentTTSBtn = null;
+                };
+
+                audio.onerror = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    btn.classList.remove('playing', 'loading');
+                    btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                    currentTTSAudio = null;
+                    currentTTSBtn = null;
+                    showToast('Audio playback failed.', 'error');
+                };
+
+            } catch (err) {
+                console.error('TTS error:', err);
+                btn.classList.remove('loading', 'playing');
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                currentTTSBtn = null;
+                showToast(`TTS failed: ${err.message}`, 'error');
+            }
+        }
     </script>
 </body>
+
 </html>

@@ -20,9 +20,12 @@ def get_embeddings() -> HuggingFaceEmbeddings:
     )
 
 
+@lru_cache(maxsize=1)
 def get_vector_store() -> Chroma:
     """
     Initialize and return the Chroma vector store instance.
+    Cached as a singleton — Chroma client creation is expensive and
+    the same instance can be safely reused across all requests.
     """
     embeddings = get_embeddings()
     return Chroma(
@@ -225,24 +228,35 @@ def search_vector_store(query: str, k: int = 5, session_id: str = None) -> List[
 
 def get_indexed_files(session_id: str = None) -> List[str]:
     """
-    Retrieve list of unique filenames that are currently indexed.
+    Retrieve list of unique filenames that are currently indexed in Chroma.
+
+    - If session_id is given: returns only files belonging to that session.
+    - If session_id is None (e.g. called from /api/status): returns ALL
+      indexed files across every session so the global counter is correct.
     """
     try:
         store = get_vector_store()
-        # Fetch metadata from all items in the collection
-        collection_data = store._collection.get(include=["metadatas"])
-        metadatas = collection_data.get("metadatas", [])
-        
-        # Extract unique sources
+
+        if session_id:
+            # Scoped query — only fetch metadata for this session
+            collection_data = store._collection.get(
+                where={"session_id": session_id},
+                include=["metadatas"]
+            )
+        else:
+            # Global query — fetch everything (used by /api/status for the count)
+            collection_data = store._collection.get(include=["metadatas"])
+
+        metadatas = collection_data.get("metadatas", []) if collection_data else []
+
         unique_sources = set()
-        # Strictly require a valid session_id to list files
-        target_session = session_id if session_id else "NO_SESSION_DEFINED"
         for meta in metadatas:
             if meta and "source" in meta:
-                if meta.get("session_id") != target_session:
+                # When scoped, skip any stray "NO_SESSION_DEFINED" docs
+                if session_id and meta.get("session_id") != session_id:
                     continue
                 unique_sources.add(meta["source"])
-                
+
         return sorted(list(unique_sources))
     except Exception:
         return []
